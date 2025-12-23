@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bizim Dünyamız</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-box">
+            <h2 id="auth-title">Giriş Yap</h2>
+            <input type="email" id="email" placeholder="E-Posta">
+            <input type="password" id="password" placeholder="Şifre">
+            <button class="auth-btn" id="email-auth-btn">Giriş Yap</button>
+            <button class="auth-btn google-btn" id="google-auth-btn"><i class="fa-brands fa-google"></i> Google ile Gir</button>
+            <span class="toggle-auth" id="toggle-auth-mode">Hesabın yok mu? Kayıt Ol</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h2>Bizimki ❤️</h2>
+            <ul>
+                <li><i class="fa-solid fa-house"></i> Ana Sayfa</li>
+                <li><i class="fa-solid fa-heart"></i> Beğendiklerim</li>
+                <li><i class="fa-solid fa-list"></i> Çalma Listem</li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <div class="top-bar">
+                <div class="user-profile" id="user-profile-btn">
+                    <i class="fa-solid fa-user-circle"></i>
+                    <span id="username-display">Misafir</span>
+                    <i class="fa-solid fa-circle-check blue-tick" id="blue-tick" title="Onaylı Hesap"></i>
+                    <button id="logout-btn" style="display:none; margin-left:10px; font-size:10px;">Çıkış</button>
+                </div>
+            </div>
+
+            <header>
+                <h1>4. Ayımız Kutlu Olsun 🌸</h1>
+            </header>
+
+            <div class="greeting-card">
+                <img src="fotolar/bizim-foto.jpg" alt="Biz" class="hero-img" id="hero-img">
+                <div class="greeting-text">
+                    <h3>Hoş geldin <span id="welcome-name">Sevgilim</span></h3>
+                    <p>Bu liste senin hesabına özel.</p>
+                </div>
+            </div>
+
+            <div class="song-list" id="song-list-container">
+                </div>
+        </div>
+    </div>
+
+    <div class="player-bar">
+        <div class="player-left">
+            <img src="fotolar/kapak.jpg" id="current-cover">
+            <div class="player-info">
+                <h4 id="current-title">Seçilmedi</h4>
+                <p id="current-note">Özel Mesajın...</p>
+            </div>
+            <i class="fa-regular fa-heart like-btn" id="like-btn"></i>
+        </div>
+
+        <div class="player-center">
+            <div class="controls">
+                <i class="fa-solid fa-shuffle control-icon" id="shuffle-btn"></i>
+                <i class="fa-solid fa-backward-step control-icon" id="prev-btn"></i>
+                <div class="play-pause-btn" id="play-pause-btn">
+                    <i class="fa-solid fa-play" id="play-icon"></i>
+                </div>
+                <i class="fa-solid fa-forward-step control-icon" id="next-btn"></i>
+                <i class="fa-solid fa-repeat control-icon" id="repeat-btn"></i>
+            </div>
+            <div class="progress-container">
+                <span id="current-time">0:00</span>
+                <input type="range" id="progress-bar" value="0" max="100">
+                <span id="duration">0:00</span>
+            </div>
+        </div>
+
+        <div class="player-right">
+            <i class="fa-solid fa-volume-high"></i>
+            <input type="range" min="0" max="100" value="100" class="volume-slider" id="volume-slider">
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
