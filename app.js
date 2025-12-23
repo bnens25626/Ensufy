@@ -1,25 +1,5 @@
-// --- 1. FIREBASE İTHAL ETME ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// --- FIREBASE AYARLARI ---
-const firebaseConfig = {
-    apiKey: "AIzaSyBE7CjplVaq-pfT4OdPaufSrcd3zdZYOMk",
-    authDomain: "ensufy.firebaseapp.com",
-    projectId: "ensufy",
-    storageBucket: "ensufy.firebasestorage.app",
-    messagingSenderId: "768227665414",
-    appId: "1:768227665414:web:09282f41c39af751a68587"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-// --- 2. VERİLER (ŞARKILAR) ---
-// Not: src kısmındaki dosya yollarının doğru olduğundan emin ol.
+// --- 1. VERİLER VE DEĞİŞKENLER ---
+// Şarkı dosyalarının "muzikler" klasöründe, resimlerin "fotolar" klasöründe olduğundan emin ol.
 const allSongs = [
     { title: "Bizim Şarkımız", artist: "Seni Çok Seviyorum", cover: "fotolar/foto1.jpg", src: "muzikler/sarki1.mp3" },
     { title: "Yeni Yıl Hediyem", artist: "Mutlu Yıllar Aşkım", cover: "fotolar/foto2.jpg", src: "muzikler/sarki2.mp3" },
@@ -27,13 +7,18 @@ const allSongs = [
     { title: "Hatıramız", artist: "Bizim Hikayemiz", cover: "fotolar/foto2.jpg", src: "muzikler/sarki4.mp3" }
 ];
 
-// Şu an çalan liste (Başlangıçta tüm şarkılar)
+// Değişkenler
 let currentPlaylist = [...allSongs]; 
 let songIndex = 0;
 let isPlaying = false;
 let isLooping = false;
 
-// --- HTML SEÇİCİLER ---
+// Veri Yönetimi (Tarayıcı Hafızası)
+let myPlaylists = JSON.parse(localStorage.getItem('myPlaylists')) || [];
+let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
+let userStats = JSON.parse(localStorage.getItem('userStats')) || { followers: 0, isFollowing: false };
+
+// --- 2. SEÇİCİLER ---
 const audio = new Audio();
 const playPauseBtn = document.getElementById('play-pause-btn');
 const playIcon = document.getElementById('play-icon');
@@ -44,71 +29,53 @@ const volumeSlider = document.getElementById('volume-slider');
 const progressBar = document.getElementById('progress-bar');
 const likeBtn = document.getElementById('like-btn');
 
-// --- VERİ YÖNETİMİ (KAYIT SİSTEMİ) ---
-let myPlaylists = JSON.parse(localStorage.getItem('myPlaylists')) || [];
-let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
-let userStats = JSON.parse(localStorage.getItem('userStats')) || { followers: 0, following: 0, isFollowing: false };
-
-// --- 3. GİRİŞ İŞLEMLERİ ---
-const authModal = document.getElementById('auth-modal');
-const emailInput = document.getElementById('email');
-const passInput = document.getElementById('password');
-const emailAuthBtn = document.getElementById('email-auth-btn');
-const googleAuthBtn = document.getElementById('google-auth-btn');
-const toggleAuthText = document.getElementById('toggle-auth-mode');
-const authTitle = document.getElementById('auth-title');
-let isLoginMode = true;
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        authModal.style.display = "none";
-        const name = user.displayName || user.email.split('@')[0];
-        document.getElementById('username-display').innerText = name;
-        document.getElementById('welcome-name').innerText = name;
-        document.getElementById('profile-name-text').innerText = name;
-        document.getElementById('logout-btn').style.display = "inline-block";
-        if (user.emailVerified) document.getElementById('blue-tick').style.display = "inline-block";
-    } else {
-        authModal.style.display = "flex";
-    }
+// --- 3. BAŞLANGIÇ AYARLARI ---
+// Sayfa açılınca çalışacaklar
+document.addEventListener('DOMContentLoaded', () => {
+    // Giriş ekranını geçici olarak kapattık (Hızlı test için)
+    document.getElementById('auth-modal').style.display = 'none'; 
+    document.getElementById('username-display').innerText = "Sevgilim";
+    
+    // Şarkıları yükle ve ilk şarkıyı hazırla
+    renderMainSongList();
+    loadSong(allSongs[0]);
+    
+    // Ana sayfayı aç
+    switchView('home');
 });
 
-googleAuthBtn.addEventListener('click', () => signInWithPopup(auth, provider).catch(e => alert(e.message)));
-emailAuthBtn.addEventListener('click', () => {
-    const email = emailInput.value;
-    const pass = passInput.value;
-    if (isLoginMode) signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-    else createUserWithEmailAndPassword(auth, email, pass).then(u => sendEmailVerification(u.user).then(() => alert("Doğrulama maili gönderildi."))).catch(e => alert(e.message));
-});
-toggleAuthText.addEventListener('click', () => {
-    isLoginMode = !isLoginMode;
-    authTitle.innerText = isLoginMode ? "Giriş Yap" : "Kayıt Ol";
-    emailAuthBtn.innerText = isLoginMode ? "Giriş Yap" : "Kayıt Ol";
-    toggleAuthText.innerText = isLoginMode ? "Hesabın yok mu? Kayıt Ol" : "Zaten hesabın var mı? Giriş Yap";
-});
-document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-// --- 4. PLAYER MANTIĞI ---
+// --- 4. PLAYER FONKSİYONLARI ---
 
-// Şarkı Yükle
 function loadSong(song) {
     if(!song) return;
     document.getElementById('current-title').innerText = song.title;
     document.getElementById('current-note').innerText = song.artist;
-    document.getElementById('current-cover').src = song.cover;
-    document.getElementById('hero-img').src = song.cover;
-    audio.src = song.src;
+    // Hata almamak için resim ve müzik var mı kontrolü (Basit)
+    document.getElementById('current-cover').src = song.cover || ''; 
+    document.getElementById('hero-img').src = song.cover || '';
+    audio.src = song.src || '';
 
-    // Beğenme Durumunu Kontrol Et (Kalp Rengi)
+    // Kalp ikonunu güncelle
+    updateLikeIcon(song);
+}
+
+function updateLikeIcon(song) {
     const isLiked = likedSongs.some(s => s.title === song.title);
-    likeBtn.classList.toggle('fa-solid', isLiked);
-    likeBtn.classList.toggle('fa-regular', !isLiked);
-    likeBtn.style.color = isLiked ? 'red' : '#888';
+    if(isLiked) {
+        likeBtn.classList.remove('fa-regular');
+        likeBtn.classList.add('fa-solid');
+        likeBtn.style.color = 'red';
+    } else {
+        likeBtn.classList.add('fa-regular');
+        likeBtn.classList.remove('fa-solid');
+        likeBtn.style.color = '#888';
+    }
 }
 
 function playSong() {
     isPlaying = true;
-    audio.play();
+    audio.play().catch(e => console.log("Müzik dosyası bulunamadı veya oynatılamadı:", e));
     playIcon.className = 'fa-solid fa-pause';
 }
 
@@ -132,151 +99,196 @@ function prevSong() {
     playSong();
 }
 
-// Şarkı Bitince
-audio.addEventListener('ended', () => isLooping ? playSong() : nextSong());
-
-// Butonlar
+// Event Listenerlar (Tıklama Olayları)
 playPauseBtn.addEventListener('click', () => isPlaying ? pauseSong() : playSong());
 prevBtn.addEventListener('click', prevSong);
 nextBtn.addEventListener('click', nextSong);
+
+audio.addEventListener('ended', () => {
+    if (isLooping) { audio.currentTime = 0; playSong(); }
+    else { nextSong(); }
+});
+
 repeatBtn.addEventListener('click', () => {
     isLooping = !isLooping;
     repeatBtn.style.color = isLooping ? '#00BCD4' : '#888';
 });
+
 volumeSlider.addEventListener('input', (e) => audio.volume = e.target.value / 100);
 
-// Progress Bar
-audio.addEventListener('timeupdate', (e) => {
-    if(e.target.duration) {
-        progressBar.value = (e.target.currentTime / e.target.duration) * 100;
-        document.getElementById('current-time').innerText = formatTime(e.target.currentTime);
-        document.getElementById('duration').innerText = formatTime(e.target.duration);
+audio.addEventListener('timeupdate', () => {
+    if(audio.duration) {
+        progressBar.value = (audio.currentTime / audio.duration) * 100;
+        document.getElementById('current-time').innerText = formatTime(audio.currentTime);
+        document.getElementById('duration').innerText = formatTime(audio.duration);
     }
 });
-progressBar.addEventListener('input', () => audio.currentTime = (progressBar.value * audio.duration) / 100);
+
+progressBar.addEventListener('input', () => {
+    audio.currentTime = (progressBar.value * audio.duration) / 100;
+});
+
 function formatTime(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
 
 
-// --- 5. İŞLEVSEL ÖZELLİKLER (BEĞENME, EKLEME, LİSTELEME) ---
+// --- 5. İŞLEVSEL ÖZELLİKLER (EN ÖNEMLİ KISIM) ---
 
-// A) Beğenme (Kalp) Butonu Mantığı
-likeBtn.addEventListener('click', () => {
-    const song = currentPlaylist[songIndex];
-    // Zaten beğenilmiş mi?
-    const index = likedSongs.findIndex(s => s.title === song.title);
-    
-    if (index > -1) {
-        likedSongs.splice(index, 1); // Çıkar
-        likeBtn.classList.replace('fa-solid', 'fa-regular');
-        likeBtn.style.color = '#888';
-    } else {
-        likedSongs.push(song); // Ekle
-        likeBtn.classList.replace('fa-regular', 'fa-solid');
-        likeBtn.style.color = 'red';
-    }
-    localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
-    renderLikedSongs(); // Beğendiklerim sayfasını güncelle
-});
+// A) Ana Sayfa Listesini Oluşturma
+function renderMainSongList() {
+    const container = document.getElementById('song-list-container');
+    container.innerHTML = ""; // Temizle
 
-// B) Şarkı Listesini Ekrana Basma (YANINA (+) BUTONU EKLEDİK)
-function renderSongList(targetElementId, playlist, isMainList = false) {
-    const container = document.getElementById(targetElementId);
-    container.innerHTML = "";
-    
-    if(playlist.length === 0) {
-        container.innerHTML = "<p style='padding:10px; color:#777;'>Bu liste boş.</p>";
-        return;
-    }
-
-    playlist.forEach((song, index) => {
+    allSongs.forEach((song, index) => {
+        // Şarkı Kartı
         const item = document.createElement('div');
         item.className = 'song-item';
-        
-        // Şarkı kartı yapısı
-        let htmlContent = `
-            <div class="song-img-small" onclick="window.playSpecific(${index}, '${targetElementId}')"><img src="${song.cover}"></div>
-            <div class="song-info" onclick="window.playSpecific(${index}, '${targetElementId}')">
-                <span class="title">${song.title}</span>
-                <span class="artist">${song.artist}</span>
-            </div>
-        `;
 
-        // Sadece Ana Sayfada (+) Butonu Göster
-        if(isMainList) {
-            htmlContent += `<i class="fa-solid fa-plus-circle" style="font-size:24px; color:#00BCD4; cursor:pointer; padding:10px;" onclick="window.addToPlaylistUI(${index})"></i>`;
-        }
+        // Görsel ve Bilgi
+        const imgDiv = document.createElement('div');
+        imgDiv.className = 'song-img-small';
+        imgDiv.innerHTML = `<img src="${song.cover}">`;
         
-        item.innerHTML = htmlContent;
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'song-info';
+        infoDiv.innerHTML = `<span class="title">${song.title}</span><span class="artist">${song.artist}</span>`;
+
+        // Tıklayınca Çal
+        const playAction = () => {
+            currentPlaylist = [...allSongs];
+            songIndex = index;
+            loadSong(currentPlaylist[songIndex]);
+            playSong();
+        };
+        imgDiv.onclick = playAction;
+        infoDiv.onclick = playAction;
+
+        // (+) Ekleme Butonu
+        const plusIcon = document.createElement('i');
+        plusIcon.className = 'fa-solid fa-plus-circle';
+        plusIcon.style.cssText = "font-size:24px; color:#00BCD4; cursor:pointer; padding:10px;";
+        plusIcon.onclick = (e) => {
+            e.stopPropagation(); // Kartın çalmasını engelle
+            addToPlaylist(song); // Listeye ekle fonksiyonunu çağır
+        };
+
+        item.appendChild(imgDiv);
+        item.appendChild(infoDiv);
+        item.appendChild(plusIcon);
         container.appendChild(item);
     });
 }
 
-// Global Fonksiyonlar (HTML onclick kullanabilsin diye window'a atıyoruz)
-window.playSpecific = (index, sourceId) => {
-    // Hangi listeden çaldığına göre listeyi güncelle
-    if(sourceId === 'song-list-container') currentPlaylist = [...allSongs];
-    else if(sourceId === 'liked-songs-container') currentPlaylist = [...likedSongs];
-    // Özel liste kontrolü aşağıda yapılacak
-    
-    songIndex = index;
-    loadSong(currentPlaylist[songIndex]);
-    playSong();
-};
+// B) Beğenme Butonu İşlevi
+likeBtn.addEventListener('click', () => {
+    const song = currentPlaylist[songIndex];
+    if(!song) return;
 
-// C) Listeye Şarkı Ekleme Fonksiyonu
-window.addToPlaylistUI = (index) => {
-    const songToAdd = allSongs[index];
+    // Zaten var mı?
+    const existingIndex = likedSongs.findIndex(s => s.title === song.title);
     
+    if (existingIndex > -1) {
+        likedSongs.splice(existingIndex, 1); // Çıkar
+    } else {
+        likedSongs.push(song); // Ekle
+    }
+    
+    localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
+    updateLikeIcon(song);
+    renderLikedSongs(); // Arka planda listeyi güncelle
+});
+
+// C) Beğendiklerim Listesini Göster
+function renderLikedSongs() {
+    const container = document.getElementById('liked-songs-container');
+    container.innerHTML = "";
+
+    if(likedSongs.length === 0) {
+        container.innerHTML = "<p style='padding:20px; color:#777; text-align:center;'>Henüz beğenilen şarkı yok.</p>";
+        return;
+    }
+
+    likedSongs.forEach((song, index) => {
+        const item = document.createElement('div');
+        item.className = 'song-item';
+        item.innerHTML = `
+            <div class="song-img-small"><img src="${song.cover}"></div>
+            <div class="song-info">
+                <span class="title">${song.title}</span>
+                <span class="artist">${song.artist}</span>
+            </div>
+            <i class="fa-solid fa-heart" style="color:red; padding:10px;"></i>
+        `;
+        item.onclick = () => {
+            currentPlaylist = [...likedSongs];
+            songIndex = index;
+            loadSong(currentPlaylist[songIndex]);
+            playSong();
+        };
+        container.appendChild(item);
+    });
+}
+
+// D) Listeye Ekleme Mantığı
+function addToPlaylist(song) {
     if(myPlaylists.length === 0) {
-        alert("Önce bir çalma listesi oluşturmalısın!");
+        alert("Önce 'Çalma Listem' sekmesinden bir liste oluşturmalısın!");
         switchView('playlists');
         return;
     }
 
-    // Basit bir seçim ekranı (Prompt)
     let promptText = "Hangi listeye ekleyeyim? (Numarasını yaz):\n";
     myPlaylists.forEach((list, i) => {
         promptText += `${i+1}. ${list.name}\n`;
     });
     
     const choice = prompt(promptText);
+    if(!choice) return; // İptal ederse çık
+
     const listIndex = parseInt(choice) - 1;
 
     if(listIndex >= 0 && listIndex < myPlaylists.length) {
-        if(!myPlaylists[listIndex].songs) myPlaylists[listIndex].songs = []; // Dizi yoksa oluştur
+        if(!myPlaylists[listIndex].songs) myPlaylists[listIndex].songs = [];
         
-        // Şarkı zaten var mı?
-        const exists = myPlaylists[listIndex].songs.some(s => s.title === songToAdd.title);
+        // Şarkı kontrolü
+        const exists = myPlaylists[listIndex].songs.some(s => s.title === song.title);
         if(exists) {
-            alert("Bu şarkı zaten listede var!");
+            alert("Bu şarkı zaten orada var!");
         } else {
-            myPlaylists[listIndex].songs.push(songToAdd);
+            myPlaylists[listIndex].songs.push(song);
             myPlaylists[listIndex].count = myPlaylists[listIndex].songs.length;
             localStorage.setItem('myPlaylists', JSON.stringify(myPlaylists));
             renderPlaylists();
-            alert(`${songToAdd.title}, "${myPlaylists[listIndex].name}" listesine eklendi!`);
+            alert("Eklendi!");
         }
     } else {
-        alert("Geçersiz seçim.");
+        alert("Geçersiz liste numarası.");
     }
-};
+}
 
-// D) Çalma Listesi Oluşturma ve Görüntüleme
-document.getElementById('btn-create-playlist').addEventListener('click', () => {
-    const input = document.getElementById('new-playlist-input');
-    const name = input.value.trim();
-    if(name) {
-        myPlaylists.push({ id: Date.now(), name: name, count: 0, songs: [] });
-        localStorage.setItem('myPlaylists', JSON.stringify(myPlaylists));
-        input.value = '';
-        renderPlaylists();
-    }
-});
+// E) Çalma Listesi Oluşturma ve Gösterme
+const createBtn = document.getElementById('btn-create-playlist');
+if(createBtn) {
+    createBtn.addEventListener('click', () => {
+        const input = document.getElementById('new-playlist-input');
+        const name = input.value.trim();
+        if(name) {
+            myPlaylists.push({ id: Date.now(), name: name, count: 0, songs: [] });
+            localStorage.setItem('myPlaylists', JSON.stringify(myPlaylists));
+            input.value = '';
+            renderPlaylists();
+        }
+    });
+}
 
 function renderPlaylists() {
     const container = document.getElementById('my-playlists-container');
     container.innerHTML = '';
     
+    if(myPlaylists.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#777; grid-column:1/-1;">Liste yok.</p>';
+        return;
+    }
+
     myPlaylists.forEach((list, index) => {
         const div = document.createElement('div');
         div.className = 'playlist-card';
@@ -285,41 +297,61 @@ function renderPlaylists() {
             <h4 style="margin:0; color:#006064;">${list.name}</h4>
             <p style="font-size:12px; color:#666;">${list.count || 0} Şarkı</p>
         `;
-        // Listeye tıklayınca ne olsun?
-        div.onclick = () => openPlaylistDetail(index);
+        div.onclick = () => openPlaylist(list);
         container.appendChild(div);
     });
 }
 
-// Listenin İçini Açma (Detay Görünümü)
-function openPlaylistDetail(index) {
-    const list = myPlaylists[index];
+function openPlaylist(list) {
     if(!list.songs || list.songs.length === 0) {
         alert("Bu liste boş! Ana sayfadan (+) butonuna basarak şarkı ekle.");
         return;
     }
     
-    // Geçici olarak ana sayfa listesini değiştirip çalıyoruz
-    // Kullanıcıya hissettirmeden listeyi bu yapıyoruz
-    currentPlaylist = list.songs;
-    renderSongList('song-list-container', currentPlaylist, false); // (+) butonu olmadan göster
+    // Geçici olarak ana sayfa görünümünü değiştir
+    currentPlaylist = [...list.songs];
     
-    // Başlığı değiştir
-    document.querySelector('#view-home h1').innerText = `🎵 ${list.name}`;
-    document.querySelector('#view-home .greeting-text h3').innerText = "Çalma Listesi";
-    document.querySelector('#view-home .greeting-text p').innerText = "Senin oluşturduğun liste çalınıyor.";
+    // Ana sayfa başlığını değiştirip oraya yönlendir (Hızlı çözüm)
+    const header = document.querySelector('#view-home h1');
+    header.innerText = `🎵 ${list.name}`;
     
-    // Ana sayfaya yönlendir (Çünkü şarkı listesi orada)
+    // Listeyi bas
+    const container = document.getElementById('song-list-container');
+    container.innerHTML = "";
+    
+    // Geri Dön Butonu
+    const backBtn = document.createElement('button');
+    backBtn.innerText = "← Tüm Şarkılara Dön";
+    backBtn.style.cssText = "padding:10px; margin-bottom:10px; border:none; background:#ddd; cursor:pointer; border-radius:5px;";
+    backBtn.onclick = () => {
+        header.innerText = "Ensufy'e Hoşgeldin 🌸";
+        renderMainSongList();
+    };
+    container.appendChild(backBtn);
+
+    // Liste şarkılarını bas
+    list.songs.forEach((song, index) => {
+        const item = document.createElement('div');
+        item.className = 'song-item';
+        item.innerHTML = `
+            <div class="song-img-small"><img src="${song.cover}"></div>
+            <div class="song-info">
+                <span class="title">${song.title}</span>
+                <span class="artist">${song.artist}</span>
+            </div>
+        `;
+        item.onclick = () => {
+            songIndex = index;
+            loadSong(currentPlaylist[songIndex]);
+            playSong();
+        };
+        container.appendChild(item);
+    });
+
     switchView('home');
 }
 
-// E) Beğendiklerim Listesini Güncelle
-function renderLikedSongs() {
-    renderSongList('liked-songs-container', likedSongs, false);
-}
-
-
-// --- 6. NAVİGASYON VE PROFİL ---
+// --- 6. NAVİGASYON ---
 const views = {
     home: document.getElementById('view-home'),
     liked: document.getElementById('view-liked'),
@@ -330,28 +362,21 @@ const views = {
 function switchView(viewName) {
     Object.values(views).forEach(el => el.style.display = 'none');
     if(views[viewName]) views[viewName].style.display = 'block';
-    
-    // Sayfa açıldığında özel işlemleri yap
-    if(viewName === 'home') {
-        // Ana sayfaya dönünce orijinal tüm şarkıları geri yükle
-        // (Eğer özel liste modundaysak çıkmış oluruz)
-        if(document.querySelector('#view-home h1').innerText.includes('🎵')) {
-             document.querySelector('#view-home h1').innerText = "Ensufy'e Hoşgeldin 🌸";
-             document.querySelector('#view-home .greeting-text h3').innerHTML = 'Hoş geldin <span id="welcome-name">Sevgilim</span>';
-             document.querySelector('#view-home .greeting-text p').innerText = "Senin için hazırladığım özel şarkılar burada.";
-             renderSongList('song-list-container', allSongs, true);
-        }
-    }
+
+    // Menü aktifliği
+    document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+    const activeBtn = document.getElementById('nav-' + (viewName === 'profile' ? 'profile-side' : viewName));
+    if(activeBtn) activeBtn.classList.add('active');
+
     if(viewName === 'liked') renderLikedSongs();
     if(viewName === 'playlists') renderPlaylists();
     if(viewName === 'profile') renderProfile();
 }
 
-// Butonlar
+// Buton Bağlantıları
 document.getElementById('nav-home').addEventListener('click', () => {
-    // Home butonuna basınca her şeyi sıfırla (Tüm şarkıları göster)
-    currentPlaylist = [...allSongs];
-    renderSongList('song-list-container', allSongs, true);
+    document.querySelector('#view-home h1').innerText = "Ensufy'e Hoşgeldin 🌸";
+    renderMainSongList();
     switchView('home');
 });
 document.getElementById('nav-liked').addEventListener('click', () => switchView('liked'));
@@ -359,30 +384,34 @@ document.getElementById('nav-playlists').addEventListener('click', () => switchV
 document.getElementById('nav-profile-side').addEventListener('click', () => switchView('profile'));
 document.getElementById('user-profile-btn').addEventListener('click', () => switchView('profile'));
 
-// Profil Render
+// Profil
 function renderProfile() {
     document.getElementById('stat-playlists').innerText = myPlaylists.length + ' Liste';
     document.getElementById('stat-followers').innerText = userStats.followers + ' Takipçi';
     
-    const pContainer = document.getElementById('profile-playlists-display');
-    pContainer.innerHTML = '';
+    // Profildeki listeler
+    const container = document.getElementById('profile-playlists-display');
+    container.innerHTML = '';
     myPlaylists.forEach(list => {
-        const div = document.createElement('div');
-        div.className = 'playlist-card';
-        div.innerHTML = `<b>${list.name}</b>`;
-        pContainer.appendChild(div);
+        const d = document.createElement('div');
+        d.className = 'playlist-card';
+        d.innerHTML = `<b>${list.name}</b>`;
+        container.appendChild(d);
     });
 }
+
 document.getElementById('btn-follow-toggle').addEventListener('click', () => {
     userStats.isFollowing = !userStats.isFollowing;
     userStats.followers += userStats.isFollowing ? 1 : -1;
     localStorage.setItem('userStats', JSON.stringify(userStats));
-    renderProfile();
-});
-
-// --- BAŞLANGIÇ ---
-window.addEventListener('DOMContentLoaded', () => {
-    renderSongList('song-list-container', allSongs, true);
-    loadSong(allSongs[0]);
-    switchView('home');
+    
+    const btn = document.getElementById('btn-follow-toggle');
+    if(userStats.isFollowing) {
+        btn.innerText = "TAKİP EDİLİYOR";
+        btn.classList.add('following');
+    } else {
+        btn.innerText = "TAKİP ET";
+        btn.classList.remove('following');
+    }
+    document.getElementById('stat-followers').innerText = userStats.followers + ' Takipçi';
 });
