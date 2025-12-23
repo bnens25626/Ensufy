@@ -179,7 +179,102 @@ body {
 .google-btn { background: #DB4437; }
 .toggle-auth { font-size: 12px; color: #666; cursor: pointer; margin-top: 10px; display: block;}
 
-/* MOBİL UYUMLULUK DÜZELTMELERİ */
+/* ======================================================= */
+/* YENİ EKLENEN STİLLER (PROFİL, ÇALMA LİSTESİ VE GEÇİŞLER) */
+/* ======================================================= */
+
+/* 1. Sayfa Geçiş Animasyonu */
+.view-section {
+    animation: fadeIn 0.4s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 2. Sidebar Aktif Sekme Rengi */
+.sidebar li.active {
+    background-color: #E0F7FA;
+    border-radius: 10px;
+    font-weight: bold;
+    color: #00838F;
+}
+
+/* 3. Çalma Listesi Kartları (Grid Yapısı) */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.playlist-card {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    border: 1px solid #E0F7FA;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.playlist-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 188, 212, 0.2);
+    background-color: #E0F7FA;
+}
+
+/* 4. Liste Oluşturma Kutusu */
+.create-playlist-box {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.create-playlist-box input {
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+}
+.create-playlist-box button {
+    font-family: 'Nunito', sans-serif;
+    transition: background 0.2s;
+}
+.create-playlist-box button:hover {
+    background: #00838F;
+}
+
+/* 5. Profil Sayfası Stilleri */
+.profile-header-card {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.profile-avatar {
+    color: #006064;
+    border: 2px solid #E0F7FA;
+}
+
+/* Takip Butonu */
+#btn-follow-toggle {
+    transition: all 0.3s ease;
+}
+
+#btn-follow-toggle:hover {
+    background-color: #E0F7FA !important;
+}
+
+/* Takip Ediliyorsa (Yeşil/Mavi Dolu Buton) */
+#btn-follow-toggle.following {
+    background-color: #00BCD4 !important;
+    color: white !important;
+}
+
+/* MOBİL UYUMLULUK DÜZELTMELERİ (DEVAM) */
 @media (max-width: 768px) {
     .player-right { display: none; } /* Mobilde sesi gizle */
     .player-left { width: 60%; } /* İsim alanı genişlesin */
@@ -192,5 +287,16 @@ body {
     .controls { gap: 15px; }
     /* Mobilde bazı butonları gizleyebiliriz yer kalmazsa */
     #shuffle-btn, #repeat-btn { display: none; } 
-    /* Eğer butonlar mobilde de görünsün istiyorsan yukarıdaki satırı sil */
+    
+    /* Mobilde Profil Kartı Düzeni */
+    .profile-header-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    .create-playlist-box {
+        flex-direction: column;
+    }
+    .create-playlist-box button {
+        width: 100%;
+    }
 }

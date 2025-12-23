@@ -19,7 +19,6 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // --- 2. VERİLER VE DEĞİŞKENLER ---
-// Kendi şarkılarını buraya ekle (Şimdilik herkes aynı şarkıları görür, veritabanına sonra taşıyacağız)
 const songs = [
     {
         title: "Bizim Şarkımız",
@@ -32,7 +31,6 @@ const songs = [
         artist: "Mutlu Yıllar Aşkım",
         cover: "fotolar/foto2.jpg",
         src: "muzikler/sarki2.mp3"
-        
     },
     {
         title: "Bizim Şarkımız",
@@ -45,15 +43,12 @@ const songs = [
         artist: "Mutlu Yıllar Aşkım",
         cover: "fotolar/foto2.jpg",
         src: "muzikler/sarki4.mp3"
-        
     }
-
-
 ];
 
 let songIndex = 0;
 let isPlaying = false;
-let isLooping = false; // Sonsuz döngü kapalı başlar
+let isLooping = false; 
 
 // HTML Seçiciler
 const audio = new Audio();
@@ -75,41 +70,43 @@ const googleAuthBtn = document.getElementById('google-auth-btn');
 const toggleAuthText = document.getElementById('toggle-auth-mode');
 const authTitle = document.getElementById('auth-title');
 
-let isLoginMode = true; // Giriş mi Kayıt mı?
+let isLoginMode = true;
 
 // --- 3. GİRİŞ VE HESAP İŞLEMLERİ ---
 
-// Giriş Durumu İzleme (Login olunca ne olsun?)
 onAuthStateChanged(auth, (user) => {
     if (user) {
         // Kullanıcı giriş yapmış
-        authModal.style.display = "none"; // Modalı kapat
+        authModal.style.display = "none";
         console.log("Giriş yapıldı:", user.email);
         
+        const displayName = user.displayName || user.email.split('@')[0];
+
         // Profil Bilgilerini Güncelle
-        document.getElementById('username-display').innerText = user.displayName || user.email.split('@')[0];
-        document.getElementById('welcome-name').innerText = user.displayName || "Sevgilim";
+        document.getElementById('username-display').innerText = displayName;
+        document.getElementById('welcome-name').innerText = displayName;
+        
+        // YENİ EKLENEN: Profil sayfasındaki ismi de güncelle
+        const profileNameEl = document.getElementById('profile-name-text');
+        if(profileNameEl) profileNameEl.innerText = displayName;
+
         document.getElementById('logout-btn').style.display = "inline-block";
 
-        // Mavi Tik Kontrolü
         if (user.emailVerified) {
             document.getElementById('blue-tick').style.display = "inline-block";
         } else {
             document.getElementById('blue-tick').style.display = "none";
-            // Mail doğrulaması yoksa uyarı verebilirsin
         }
 
     } else {
         // Kullanıcı çıkış yapmış
-        authModal.style.display = "flex"; // Modalı aç
+        authModal.style.display = "flex"; 
     }
 });
 
 // Google ile Giriş
 googleAuthBtn.addEventListener('click', () => {
-    signInWithPopup(auth, provider).then((result) => {
-        // Otomatik mavi tik ve giriş başarılı
-    }).catch((error) => alert("Hata: " + error.message));
+    signInWithPopup(auth, provider).catch((error) => alert("Hata: " + error.message));
 });
 
 // Email ile Giriş / Kayıt Butonu
@@ -118,14 +115,11 @@ emailAuthBtn.addEventListener('click', () => {
     const pass = passInput.value;
 
     if (isLoginMode) {
-        // Giriş Yap
         signInWithEmailAndPassword(auth, email, pass)
             .catch((error) => alert("Giriş Hatası: " + error.message));
     } else {
-        // Kayıt Ol
         createUserWithEmailAndPassword(auth, email, pass)
             .then((userCredential) => {
-                // Kayıt başarılı, doğrulama maili gönder
                 sendEmailVerification(userCredential.user)
                     .then(() => alert("Kayıt oldun! Doğrulama maili gönderildi. Lütfen mailini onayla."));
             })
@@ -148,10 +142,12 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 
 // --- 4. PLAYER FONKSİYONLARI ---
 
-// Sayfa yüklenince
 window.addEventListener('DOMContentLoaded', () => {
     loadSongList();
     loadSong(songs[songIndex]);
+    
+    // Sayfa açılınca varsayılan olarak Anasayfa'yı göster (YENİ)
+    switchView('home');
 });
 
 function loadSong(song) {
@@ -161,7 +157,6 @@ function loadSong(song) {
     document.getElementById('hero-img').src = song.cover;
     audio.src = song.src;
 
-    // Media Session (Kilit Ekranı)
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: song.title,
@@ -201,10 +196,8 @@ function prevSong() {
     playSong();
 }
 
-// Şarkı bitince ne olsun? (REPEAT DÜZELTMESİ)
 audio.addEventListener('ended', () => {
     if (isLooping) {
-        // Sonsuz döngü açıksa aynı şarkıyı baştan çal
         audio.currentTime = 0;
         playSong();
     } else {
@@ -212,11 +205,10 @@ audio.addEventListener('ended', () => {
     }
 });
 
-// Repeat Butonu (Tıklayınca renk değiştir ve modu aç)
 repeatBtn.addEventListener('click', () => {
     isLooping = !isLooping;
     if (isLooping) {
-        repeatBtn.classList.add('active'); // CSS ile mavi yap
+        repeatBtn.classList.add('active'); 
         repeatBtn.title = "Döngü Açık";
     } else {
         repeatBtn.classList.remove('active');
@@ -224,12 +216,10 @@ repeatBtn.addEventListener('click', () => {
     }
 });
 
-// Ses Kontrolü (VOLUME DÜZELTMESİ)
 volumeSlider.addEventListener('input', (e) => {
     audio.volume = e.target.value / 100;
 });
 
-// Play/Pause Butonu
 playPauseBtn.addEventListener('click', () => {
     isPlaying ? pauseSong() : playSong();
 });
@@ -237,7 +227,6 @@ playPauseBtn.addEventListener('click', () => {
 prevBtn.addEventListener('click', prevSong);
 nextBtn.addEventListener('click', nextSong);
 
-// Listeyi Oluştur
 function loadSongList() {
     songListContainer.innerHTML = "";
     songs.forEach((song, index) => {
@@ -256,7 +245,6 @@ function loadSongList() {
     });
 }
 
-// Progress Bar
 audio.addEventListener('timeupdate', (e) => {
     if(e.target.duration) {
         const progressPercent = (e.target.currentTime / e.target.duration) * 100;
@@ -274,4 +262,149 @@ function formatTime(seconds) {
     const min = Math.floor(seconds / 60);
     const sec = Math.floor(seconds % 60);
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+}
+
+
+// =========================================================================
+// YENİ EKLENEN KISIM: NAVİGASYON, PROFİL VE ÇALMA LİSTESİ MANTIĞI
+// =========================================================================
+
+// --- 1. EKRAN GEÇİŞ YÖNETİMİ ---
+const views = {
+    home: document.getElementById('view-home'),
+    liked: document.getElementById('view-liked'),
+    playlists: document.getElementById('view-playlists'),
+    profile: document.getElementById('view-profile')
+};
+
+const navBtns = {
+    home: document.getElementById('nav-home'),
+    liked: document.getElementById('nav-liked'),
+    playlists: document.getElementById('nav-playlists'),
+    profile: document.getElementById('nav-profile-side')
+};
+
+function switchView(viewName) {
+    // Tüm ekranları gizle
+    Object.values(views).forEach(el => { if(el) el.style.display = 'none'; });
+    
+    // İstenen ekranı göster
+    if(views[viewName]) views[viewName].style.display = 'block';
+
+    // Menüdeki aktiflik rengini ayarla (sidebar)
+    Object.values(navBtns).forEach(btn => { if(btn) btn.classList.remove('active'); });
+    if(navBtns[viewName]) navBtns[viewName].classList.add('active');
+
+    // Sayfa özel verilerini yükle
+    if(viewName === 'playlists') renderPlaylists();
+    if(viewName === 'profile') renderProfile();
+}
+
+// Menü Butonlarına Tıklama Olayları
+if(navBtns.home) navBtns.home.addEventListener('click', () => switchView('home'));
+if(navBtns.liked) navBtns.liked.addEventListener('click', () => switchView('liked'));
+if(navBtns.playlists) navBtns.playlists.addEventListener('click', () => switchView('playlists'));
+if(navBtns.profile) navBtns.profile.addEventListener('click', () => switchView('profile'));
+// Sağ üstteki profil ikonuna tıklayınca da profil açılır
+const userProfileBtn = document.getElementById('user-profile-btn');
+if(userProfileBtn) userProfileBtn.addEventListener('click', () => switchView('profile'));
+
+
+// --- 2. ÇALMA LİSTESİ YÖNETİMİ ---
+// Tarayıcı hafızasından listeleri çek, yoksa boş başlat
+let myPlaylists = JSON.parse(localStorage.getItem('myPlaylists')) || [];
+
+const createPlaylistBtn = document.getElementById('btn-create-playlist');
+if(createPlaylistBtn) {
+    createPlaylistBtn.addEventListener('click', () => {
+        const input = document.getElementById('new-playlist-input');
+        const name = input.value.trim();
+        if(name) {
+            // Yeni liste ekle
+            myPlaylists.push({ id: Date.now(), name: name, count: 0 });
+            // Kaydet
+            localStorage.setItem('myPlaylists', JSON.stringify(myPlaylists));
+            // Kutuyu temizle
+            input.value = '';
+            // Listeyi yenile
+            renderPlaylists();
+            alert(`"${name}" listesi oluşturuldu!`);
+        }
+    });
+}
+
+function renderPlaylists() {
+    const container = document.getElementById('my-playlists-container');
+    if(!container) return;
+    
+    container.innerHTML = ''; // Önce temizle
+    
+    if(myPlaylists.length === 0) {
+        container.innerHTML = '<p style="color:#888; grid-column: 1/-1; text-align:center;">Henüz bir listen yok.</p>';
+        return;
+    }
+
+    myPlaylists.forEach(list => {
+        const div = document.createElement('div');
+        div.className = 'playlist-card'; // CSS'teki stil
+        div.innerHTML = `
+            <div style="font-size:30px; margin-bottom:10px;">🎵</div>
+            <h4 style="margin:0; color:#006064;">${list.name}</h4>
+            <p style="font-size:12px; color:#666;">${list.count} Şarkı</p>
+        `;
+        div.onclick = () => alert(`${list.name} listesi şu an boş.`);
+        container.appendChild(div);
+    });
+}
+
+
+// --- 3. PROFİL VE TAKİP SİSTEMİ ---
+let userStats = JSON.parse(localStorage.getItem('userStats')) || { followers: 0, following: 0, isFollowing: false };
+
+function renderProfile() {
+    // İstatistikleri güncelle
+    const statPlaylists = document.getElementById('stat-playlists');
+    const statFollowers = document.getElementById('stat-followers');
+    
+    if(statPlaylists) statPlaylists.innerText = myPlaylists.length + ' Liste';
+    if(statFollowers) statFollowers.innerText = userStats.followers + ' Takipçi';
+    
+    // Buton Durumu
+    const followBtn = document.getElementById('btn-follow-toggle');
+    if(followBtn) {
+        if(userStats.isFollowing) {
+            followBtn.innerText = 'TAKİP EDİLİYOR';
+            followBtn.classList.add('following');
+        } else {
+            followBtn.innerText = 'TAKİP ET';
+            followBtn.classList.remove('following');
+        }
+    }
+
+    // Profildeki Listeleri Göster (Herkese açık gibi)
+    const pContainer = document.getElementById('profile-playlists-display');
+    if(pContainer) {
+        pContainer.innerHTML = '';
+        myPlaylists.forEach(list => {
+            const div = document.createElement('div');
+            div.className = 'playlist-card';
+            div.innerHTML = `<b>${list.name}</b>`;
+            pContainer.appendChild(div);
+        });
+    }
+}
+
+// Takip Butonu Mantığı
+const followToggleBtn = document.getElementById('btn-follow-toggle');
+if(followToggleBtn) {
+    followToggleBtn.addEventListener('click', () => {
+        userStats.isFollowing = !userStats.isFollowing;
+        
+        // Takip sayısını yapay olarak artır/azalt
+        if(userStats.isFollowing) userStats.followers++;
+        else userStats.followers--;
+        
+        localStorage.setItem('userStats', JSON.stringify(userStats));
+        renderProfile();
+    });
 }

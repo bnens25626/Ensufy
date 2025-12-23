@@ -22,16 +22,19 @@
     </div>
 
     <div class="main-container">
+        
         <div class="sidebar">
-            <h2>Bizimki ❤️</h2>
+            <h2>Ensufy</h2>
             <ul>
-                <li><i class="fa-solid fa-house"></i> Ana Sayfa</li>
-                <li><i class="fa-solid fa-heart"></i> Beğendiklerim</li>
-                <li><i class="fa-solid fa-list"></i> Çalma Listem</li>
+                <li id="nav-home" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</li>
+                <li id="nav-liked"><i class="fa-solid fa-heart"></i> Beğendiklerim</li>
+                <li id="nav-playlists"><i class="fa-solid fa-list"></i> Çalma Listem</li>
+                <li id="nav-profile-side"><i class="fa-solid fa-user"></i> Profil</li>
             </ul>
         </div>
 
         <div class="content">
+            
             <div class="top-bar">
                 <div class="user-profile" id="user-profile-btn">
                     <i class="fa-solid fa-user-circle"></i>
@@ -41,29 +44,64 @@
                 </div>
             </div>
 
-            <header>
-                <h1>4. Ayımız Kutlu Olsun 🌸</h1>
-            </header>
+            <div id="view-home" class="view-section">
+                <header>
+                    <h1>Ensufy'e Hoşgeldin 🌸</h1>
+                </header>
 
-            <div class="greeting-card">
-                <img src="fotolar/bizim-foto.jpg" alt="Biz" class="hero-img" id="hero-img">
-                <div class="greeting-text">
-                    <h3>Hoş geldin <span id="welcome-name">Sevgilim</span></h3>
-                    <p>Bu liste senin hesabına özel.</p>
+                <div class="greeting-card">
+                    <img src="fotolar/bizim-foto.jpg" alt="Biz" class="hero-img" id="hero-img">
+                    <div class="greeting-text">
+                        <h3>Hoş geldin <span id="welcome-name">Sevgilim</span></h3>
+                        <p>Senin için hazırladığım özel şarkılar burada.</p>
+                    </div>
+                </div>
+
+                <div class="song-list" id="song-list-container">
+                    </div>
+            </div>
+
+            <div id="view-liked" class="view-section" style="display: none;">
+                <h2 style="color: #006064;">❤️ Beğendiğin Şarkılar</h2>
+                <div id="liked-songs-container" class="song-list">
+                    <p style="color: #666; padding: 20px; text-align: center;">Henüz favorilenen şarkı yok.</p>
                 </div>
             </div>
 
-            <div class="song-list" id="song-list-container">
+            <div id="view-playlists" class="view-section" style="display: none;">
+                <h2 style="color: #006064;">🎵 Çalma Listelerin</h2>
+                
+                <div class="create-playlist-box" style="background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; display:flex; gap:10px;">
+                    <input type="text" id="new-playlist-input" placeholder="Yeni liste adı..." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:10px;">
+                    <button id="btn-create-playlist" style="background:#00BCD4; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">Oluştur</button>
                 </div>
-        </div>
-    </div>
 
-    <div class="player-bar">
+                <div id="my-playlists-container" class="grid-container"></div>
+            </div>
+
+            <div id="view-profile" class="view-section" style="display: none;">
+                <div class="profile-header-card" style="background: white; padding: 30px; border-radius: 20px; display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                    <div class="profile-avatar" style="font-size: 50px; background:#E0F7FA; width:80px; height:80px; display:flex; align-items:center; justify-content:center; border-radius:50%;">👤</div>
+                    <div class="profile-details">
+                        <h1 id="profile-name-text" style="margin:0; color:#006064;">Misafir</h1>
+                        <div class="profile-stats" style="color:#666; margin:5px 0;">
+                            <span id="stat-playlists">0 Liste</span> • 
+                            <span id="stat-followers">0 Takipçi</span>
+                        </div>
+                        <button id="btn-follow-toggle" style="border:2px solid #00BCD4; background:transparent; color:#00BCD4; padding:5px 20px; border-radius:20px; cursor:pointer; font-weight:bold;">TAKİP ET</button>
+                    </div>
+                </div>
+                
+                <h3 style="color: #006064;">Herkese Açık Listeler</h3>
+                <div id="profile-playlists-display" class="grid-container"></div>
+            </div>
+
+        </div> </div> <div class="player-bar">
         <div class="player-left">
             <img src="fotolar/kapak.jpg" id="current-cover">
             <div class="player-info">
                 <h4 id="current-title">Seçilmedi</h4>
-                <p id="current-note">Özel Mesajın...</p>
+                <p id="current-note">Ensufy Müzik</p>
             </div>
             <i class="fa-regular fa-heart like-btn" id="like-btn"></i>
         </div>
